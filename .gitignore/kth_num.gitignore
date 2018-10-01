@@ -1,0 +1,105 @@
+// kth_num.cpp: 定义控制台应用程序的入口点。
+//
+
+#include "stdafx.h"
+#include "iostream"
+#include "time.h"
+#include "stdlib.h"
+
+using namespace std;
+
+const int MaxNum = 5000000;
+const int MaxVal = 1000000000;
+
+void seperate(int* v, int index, int size, int* g, int* l)
+{
+	int flag = v[index];
+	int s = 1, t = 1;
+	for (int i = 0; i < size; i++)
+	{
+		if (i == index)
+			continue;
+		if (flag > v[i])
+		{
+			l[s] = v[i];
+			s++;
+		}
+		else
+		{
+			g[t] = v[i];
+			t++;
+		}
+	}
+	l[0] = --s;
+	g[0] = --t;
+}
+
+
+int main()
+{
+	int num = 0;
+	cin >> num;
+	while (num > MaxNum || num <= 0)
+		cin >> num;
+
+	int index = 0;
+	cin >> index;
+	while (index >= num || index <= 0)
+		cin >> index;
+
+	int* input_vector = new int[num];
+	for (int i = 0; i < num; i++)
+	{
+		cin >> input_vector[i];
+		while (input_vector[i]>MaxVal)
+			cin >> input_vector[i];
+	}
+
+	int* g = new int[num];	//未进行初始化
+	int* l = new int[num];
+	int temp_index = 0;	//存储当前元素排序
+	int output = 0;	
+	int flag = 0;
+	int p = 0;
+	
+	int *v = new int[num];
+	while (1)
+	{
+		if (!flag)
+		{
+			for (int i = 0; i < num; i++)
+				v[i] = input_vector[i];
+			flag++;
+		}
+		
+		p = int(num / 2);
+		seperate(v, p, num, g, l);
+		temp_index = g[0]+1;
+		
+		if (temp_index == index)
+		{
+			output = v[p];
+			break;
+		}
+			
+		else if (temp_index > index)
+		{
+			num = g[0];
+			index = index;
+			for (int i = 0; i <= num; i++)
+				v[i - 1] = g[i];
+		}
+		else
+		{
+			num = l[0];
+			index = index - temp_index;
+			for (int i = 0; i <= num; i++)
+				v[i - 1] = l[i];
+		}
+	}
+
+	cout << output << endl;
+	delete[] input_vector, v, g, l;
+    return 0;
+}
+
