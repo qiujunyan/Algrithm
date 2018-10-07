@@ -1,0 +1,80 @@
+#include "stdafx.h"
+#include "iostream"
+#include "opencv2/opencv.hpp"
+
+using namespace std;
+using namespace cv;
+
+const int NUM = 1000000;		//采样点数
+int sample[NUM] = { 0 };		//保存采样值
+int xu[NUM] = { 0 }, xl[NUM] = { 0 }, n[NUM] = { 0 };
+const int xl_bound = -200, xu_bound = 200;
+const int n_l = 1, n_u = 100;
+int Histgram[(xu_bound - xl_bound)] = { 0 };
+double E = 0, Sigma = 0;
+
+
+void max(int &g, int &l)
+{
+	int c;
+	if (l > g) c = l, l = g, g = c;
+}
+
+int RandUniform(int const upper, int const lower)
+{
+	if (upper == lower) return upper;
+	else
+		return rand() % (upper - lower) + lower;
+}
+
+int main()
+{
+	int num = 0;
+	int i = 0;
+	int k = 0;
+	while (1)
+	{
+		n[i] = RandUniform(n_u, n_l);
+		xl[i] = RandUniform(xu_bound, xl_bound);
+		xu[i] = RandUniform(xu_bound, xl_bound);
+		max(xu[i], xl[i]);
+		for (int j = 0; j < n[i]; j++)
+		{
+			sample[k++] = RandUniform(xu[i], xl[i]);
+			if (++num >= NUM - 1) break;
+			E += sample[j];
+		}
+		i++;
+		if (num >= NUM - 1) break;
+	}
+
+	E /= NUM;
+	for (int j = 0; j < NUM; j++)
+		Sigma += (sample[j] - E)*(sample[j] - E);
+	Sigma = sqrt(Sigma / NUM);
+
+	for (int j = 0; j <= num; j++)
+		Histgram[sample[j] - xl_bound]++;
+
+	//绘制直方图
+	Mat histgram;
+	const int INTERVAL = 6;
+	int hight = 0, width = INTERVAL * (xu_bound - xl_bound);
+
+	//将最大值赋值给hight
+	for (int i = 0; i < (xu_bound - xl_bound); i++)
+	{
+		if (Histgram[i] > hight) hight = Histgram[i];
+	}
+	histgram = Mat::zeros(cvSize(width, hight), CV_8UC1);
+	for (int i = 0; i < (xu_bound - xl_bound + 1); i++)
+	{
+		int h = hight - Histgram[i] < 0 ? 0 : hight - Histgram[i];
+		line(histgram, Point(i * INTERVAL, hight), Point(i * INTERVAL, h), Scalar(255, 255, 255), 1, 16);
+		line(histgram, Point(i * INTERVAL + 2, hight), Point(i * INTERVAL + 2, h), Scalar(255, 255, 255), 1, 16);
+	}
+
+	imshow("histgram", histgram);
+	cvWaitKey();
+	return 0;
+}
