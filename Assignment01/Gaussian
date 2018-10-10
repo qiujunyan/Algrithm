@@ -1,0 +1,83 @@
+#include "stdafx.h"
+#include "iostream"
+#include "math.h"
+#include <fstream>
+#include <iomanip>	
+#define PI 3.141592654
+
+using namespace std;
+
+
+double Gaussian(float E, float Sigma)
+{
+	static double u = 0, v = 0;
+	static int flag = 0;
+	double var = 0;
+
+	if (!flag)
+		{
+			u = (double)rand() / RAND_MAX;
+			v = (double)rand() / RAND_MAX;
+			var = sqrt(-2.0 * log(u))* sin(2.0 * PI * v);
+		}
+	else 
+		var = sqrt(-2.0 * log(u))* cos(2.0 * PI * v);
+
+	flag = 1 - flag;
+	return var * Sigma + E;
+}
+
+bool Mul(double x1, double x2)
+{
+	if (x1 * 2 > 0) return true;
+	else return false;
+}
+
+int main()
+{
+	const int DIM = 2;	//特征向量的维数
+	const int NUM = 50;	//样本数量的大小
+	double x[NUM][DIM] = { 0 };
+	double y[NUM][DIM] = { 0 };
+	
+	double sigma = 1;
+	for (int i = 0; i < NUM; i++)
+		for (int j = 0; j < DIM; j++)
+			x[i][j] = Gaussian((1-j), sigma);
+
+	for (int i = 0; i < NUM; i++)
+		for (int j = 0; j < DIM; j++)
+			y[i][j] = Gaussian((j-1), sigma);
+
+	ofstream data;
+	data.open("data.txt");	
+	int flag1 = 0, flag2 = 0;
+	data << "w1数据:" << endl;
+	for (int i = 0; i < NUM; i++)
+	{
+		data << "第" << i << "个数据：" << "\t";
+		for (int j = 0; j < DIM; j++)
+		{
+			data << fixed << setprecision(4) << x[i][j] << "\t\t";
+		}
+		data << Mul(x[i][0], x[i][1]) << endl;
+		if (!Mul(x[i][0], x[i][1])) flag1++;
+	}
+	data << "w1分类错误样本个数为：" << flag1 << endl << endl;
+
+	data << "w2数据:" << endl;
+	for (int i = 0; i < NUM; i++)
+	{
+		data << "第" << i << "个数据：" << "\t";
+		for (int j = 0; j < DIM; j++)
+		{
+			data << fixed << setprecision(4) << y[i][j] << "\t\t";
+		}
+		data << !Mul(y[i][0], y[i][1]) << endl;
+		if (Mul(y[i][0], y[i][1])) flag2++;
+	}
+	data << "w2分类错误样本个数为：" << flag2 << endl;
+
+	data.close();
+	return 0;
+}
