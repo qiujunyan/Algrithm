@@ -5,13 +5,14 @@
 using namespace std;
 using namespace cv;
 
-const int NUM = 1000000;		//采样点数
+const int SAMPLE_NUM = 10000;		//采样点数
+const int NUM = 1000000;
 int sample[NUM] = { 0 };		//保存采样值
 int xu[NUM] = { 0 }, xl[NUM] = { 0 }, n[NUM] = { 0 };
 const int xl_bound = -200, xu_bound = 200;
-const int n_l = 1, n_u = 100;
+const int n_l = 1, n_u = 1000;
 int Histgram[(xu_bound - xl_bound)] = { 0 };
-double E = 0, Sigma = 0;
+double E[NUM] = { 0 };
 
 
 void max(int &g, int &l)
@@ -29,36 +30,45 @@ int RandUniform(int const upper, int const lower)
 
 int main()
 {
-	int num = 0;
-	int i = 0;
-	int k = 0;
-	while (1)
-	{
-		n[i] = RandUniform(n_u, n_l);
-		xl[i] = RandUniform(xu_bound, xl_bound);
-		xu[i] = RandUniform(xu_bound, xl_bound);
-		max(xu[i], xl[i]);
-		for (int j = 0; j < n[i]; j++)
+	for (int l = 0; l < NUM; l++)
+	{	
+		int num = 0;
+		int i = 0;
+		while (1)
 		{
-			sample[k++] = RandUniform(xu[i], xl[i]);
-			if (++num >= NUM - 1) break;
-			E += sample[j];
+			n[i] = RandUniform(n_u, n_l);
+			xl[i] = RandUniform(xu_bound, xl_bound);
+			xu[i] = RandUniform(xu_bound, xl_bound);
+			max(xu[i], xl[i]);
+			for (int j = 0; j < n[i]; j++)
+			{
+				sample[num++] = RandUniform(xu[i], xl[i]);
+				if (num >= SAMPLE_NUM - 1) break;
+				E[l] += sample[j];
+			}
+			i++;
+			if (num >= SAMPLE_NUM - 1) break;
 		}
-		i++;
-		if (num >= NUM - 1) break;
+		E[l] /= SAMPLE_NUM;
 	}
-
-	E /= NUM;
+	
+	double Aver = 0, Sigma = 0;
 	for (int j = 0; j < NUM; j++)
-		Sigma += (sample[j] - E)*(sample[j] - E);
-	Sigma = sqrt(Sigma / NUM);
+		Aver += E[j];
+	Aver /= NUM;
 
-	for (int j = 0; j <= num; j++)
-		Histgram[sample[j] - xl_bound]++;
+	for (int j = 0; j < NUM; j++)
+		Sigma += sqrt((E[j] - Aver)*(E[j] - Aver));
+	Sigma /= NUM;
+	
+
+	for (int j = 0; j <NUM; j++)
+		Histgram[int(E[j]) - xl_bound]++;
+
 
 	//绘制直方图
 	Mat histgram;
-	const int INTERVAL = 6;
+	const int INTERVAL = 8;
 	int hight = 0, width = INTERVAL * (xu_bound - xl_bound);
 
 	//将最大值赋值给hight
@@ -66,6 +76,7 @@ int main()
 	{
 		if (Histgram[i] > hight) hight = Histgram[i];
 	}
+
 	histgram = Mat::zeros(cvSize(width, hight), CV_8UC1);
 	for (int i = 0; i < (xu_bound - xl_bound + 1); i++)
 	{
@@ -75,6 +86,7 @@ int main()
 	}
 
 	imshow("histgram", histgram);
+	cout << "end" << endl;
 	cvWaitKey();
 	return 0;
 }
