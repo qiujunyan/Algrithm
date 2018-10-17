@@ -1,0 +1,85 @@
+#include "stdafx.h"
+#include "iostream"
+#include <algorithm>
+
+using namespace std;
+
+template<typename T>
+void Swap(T& a, T& b)
+{
+	int c = a;
+	a = b;
+	b = c;
+}
+
+int MergeCount(int* arr, int l, int r, int median)
+{
+	int cnt = 0;
+	int l_size = median - l + 1, r_size = r - median;
+
+	int* temp_arr = new int[r - l + 1];
+	for (int i = 0; i <= r - l; i++)
+		temp_arr[i] = arr[l + i];
+
+	int i = 0, j = 0, k = 0;
+	for (; k <= r - l; k++)
+	{
+		if (i >= l_size)		//左侧入栈完毕，将右侧入栈
+		{
+			arr[l + k] = temp_arr[l_size + j];
+			j++;
+			continue;
+		}
+		if (j >= r_size)		//右侧入栈完毕，将左侧入栈
+		{
+			arr[l + k] = temp_arr[i];
+			i++;
+			continue;
+		}
+
+		if (temp_arr[l_size + j] < temp_arr[i])  //右侧入栈
+		{
+			cnt += l_size - i;
+			arr[l + k] = temp_arr[l_size + j];
+			j++;
+		}
+		else													//左侧入栈
+		{
+			arr[l + k] = temp_arr[i];
+			i++;
+		}	
+	}
+	delete[] temp_arr;
+	return cnt;
+}
+
+int CountInversions(int* arr, int l, int r)
+{
+	if (r == l) return 0;
+	if (r - l == 1)
+	{
+		if (arr[l] > arr[r])
+		{
+			Swap(arr[l], arr[r]);
+			return 1;
+		}
+		else return 0;
+	}
+
+	int median = (l + r) >> 1;
+	int l_cnt = CountInversions(arr, l, median);
+	int r_cnt = CountInversions(arr, median + 1, r);
+	int merge_cnt = MergeCount(arr, l, r, median);
+
+	return l_cnt + r_cnt + merge_cnt;
+}
+
+int main()
+{
+	int arr[] = { 10,3,19,18,7,14,16,17,11,2,25,23 };
+	int size = sizeof(arr) / sizeof(arr[0]);
+	int cnt = CountInversions(arr, 0, size-1);
+
+  return 0;
+}
+
