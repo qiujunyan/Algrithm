@@ -1,0 +1,84 @@
+#include "stdafx.h"
+#include <iostream>
+#include <algorithm>
+#define INFINITY 1000000
+
+using namespace std;
+
+
+template<typename T>
+T Max(T a, T b)
+{
+	T c = a > b ? a : b;
+	return c;
+}
+
+int IncreasingNumber(int* arr, int r, int C)
+{
+	int cnt = 0;
+	if (!r)
+	{
+		if (arr[r] < C) cnt = 1;  
+	}
+
+	else
+	{
+		int c1, c2;
+		c1 = IncreasingNumber(arr, r - 1, C);	//不选取第r个元素
+		if (arr[r] < C)
+			c2 = IncreasingNumber(arr, r - 1, arr[r]) + 1;	//选取第r个元素
+		else
+			c2 = c1;
+
+		cnt = Max(c1, c2);
+	}
+	return cnt;
+}
+
+int IncreasingSeq(int* arr, int r)
+{
+	int cnt = 0;
+	int* B = new int[r];
+	B[0] = arr[0];
+	for (int i = 1; i < r; i++)
+	{
+		if (B[cnt] < arr[i])
+			B[++cnt] = arr[i];
+		else if (cnt >=1 && B[cnt] > arr[i] && B[cnt - 1] < arr[i])
+			B[cnt] = arr[i];
+	}
+
+	delete[]B;
+	B = NULL;
+	return cnt+1;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(0);
+
+	int GroupNum, PatchSize = 0;
+	cin >> GroupNum;
+	int* Output = new int[GroupNum];
+
+	for (int i = 0; i < GroupNum; i++)
+	{
+		cin >> PatchSize;
+		int* group = new int[PatchSize];
+		for (int j = 0; j < PatchSize; j++)
+			cin >> group[j];
+		Output[i] = IncreasingSeq(group, PatchSize);
+
+		delete[] group;
+		group = NULL;
+	}
+
+	for (int i = 0; i < GroupNum; i++)
+		cout << Output[i] << endl;
+	//int arr[] = {2,1,5,3,6,4,8,9,7};
+	//int size = sizeof(arr) / sizeof(arr[0]);
+	//int cnt = IcreasingSeq(arr, size);
+
+	return 0;
+}
