@@ -1,56 +1,40 @@
 #include "stdafx.h"
-#include <iostream>
-#include <algorithm>
-#define INFINITY 1000000
-
+#include<iostream>
 using namespace std;
 
-
-template<typename T>
-T Max(T a, T b)
+int Search(int arr[], int n, int k)
 {
-	T c = a > b ? a : b;
-	return c;
+	int l = 0, r = n;
+	while (l < r)
+	{
+		int mid = (l + r) >> 1;
+		if (k <= arr[mid]) r = mid;
+		else l = mid + 1;
+	}
+	return r;
 }
-
-int IncreasingNumber(int* arr, int r, int C)
+int IncreasingSeq(int arr[], int n)
 {
 	int cnt = 0;
-	if (!r)
+	int* temp = new int[n + 1];
+	temp[0] = arr[0];
+	for (int i = 1; i < n; i++)
 	{
-		if (arr[r] < C) cnt = 1;  
-	}
-
-	else
-	{
-		int c1, c2;
-		c1 = IncreasingNumber(arr, r - 1, C);	//不选取第r个元素
-		if (arr[r] < C)
-			c2 = IncreasingNumber(arr, r - 1, arr[r]) + 1;	//选取第r个元素
+		if (arr[i] > temp[cnt])
+		{
+			cnt++;
+			temp[cnt] = arr[i];
+		}
 		else
-			c2 = c1;
-
-		cnt = Max(c1, c2);
-	}
-	return cnt;
-}
-
-int IncreasingSeq(int* arr, int r)
-{
-	int cnt = 0;
-	int* B = new int[r];
-	B[0] = arr[0];
-	for (int i = 1; i < r; i++)
-	{
-		if (B[cnt] < arr[i])
-			B[++cnt] = arr[i];
-		else if (cnt >=1 && B[cnt] > arr[i] && B[cnt - 1] < arr[i])
-			B[cnt] = arr[i];
+		{
+			int index = Search(temp, cnt, arr[i]);
+			temp[index] = arr[i];
+		}
 	}
 
-	delete[]B;
-	B = NULL;
-	return cnt+1;
+	delete[] temp;
+	temp = NULL;
+	return cnt + 1;
 }
 
 int main()
@@ -76,9 +60,6 @@ int main()
 
 	for (int i = 0; i < GroupNum; i++)
 		cout << Output[i] << endl;
-	//int arr[] = {2,1,5,3,6,4,8,9,7};
-	//int size = sizeof(arr) / sizeof(arr[0]);
-	//int cnt = IcreasingSeq(arr, size);
 
 	return 0;
 }
