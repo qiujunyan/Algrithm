@@ -1,0 +1,98 @@
+#include"stdafx.h"
+#include<iostream>
+#include<vector>
+#include<algorithm>
+
+#define SIZE 100
+using namespace std;
+
+
+bool compare(const int& a, const int& b)
+{
+	return(a > b);
+}
+struct topkscore
+{
+	int score;
+	int s[SIZE] = { 0 };
+	int size = 0;
+};
+
+int m, n, k;
+topkscore arr[SIZE][SIZE];
+
+void input_arr()
+{
+	cin >> m >> n >> k;
+	for (int i = 0; i < m; i++)
+		for (int j = 0; j < n; j++)
+			cin >> arr[i][j].score;
+	arr[0][0].s[0] = arr[0][0].score;
+	for (int i = 1; i < m; i++)
+	{
+		arr[i][0].s[0] = arr[i - 1][0].s[0] + arr[i][0].score;
+		arr[i][0].size++;
+	}
+	for (int j = 1; j < n; j++)
+	{
+		arr[0][j].s[0] += arr[0][j - 1].s[0] + arr[0][j].score;
+		arr[0][j].size++;
+	}
+
+}
+
+void getTopKscore(int x, int y)
+{
+	int cnt = 0;
+	sort(arr[x - 1][y].s, arr[x - 1][y].s + arr[x - 1][y].size, compare);
+	sort(arr[x][y - 1].s, arr[x][y - 1].s + arr[x][y - 1].size, compare);
+	int i = 0, j = 0;
+	while (cnt < k)
+	{
+		if (i >= arr[x - 1][y].size && j >= arr[x][y - 1].size)
+			break;
+		if (i < arr[x - 1][y].size && arr[x - 1][y].s[i] > arr[x][y - 1].s[j])
+		{
+			arr[x][y].s[cnt] = arr[x - 1][y].s[i] + arr[x][y].score;
+			arr[x][y].size++;
+			i++;
+			cnt++;
+			continue;
+		}
+		if (j < arr[x][y - 1].size && arr[x - 1][y].s[i] <= arr[x][y - 1].s[j])
+		{
+			arr[x][y].s[cnt] = arr[x][y - 1].s[j] + arr[x][y].score;
+			arr[x][y].size++;
+			j++;
+			cnt++;
+			continue;
+		}
+	}
+}
+
+void topkpath()
+{
+	for (int i = 1; i < m; i++)
+		for (int j = 1; j < n; j++)
+			getTopKscore(i, j);
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(0);
+	input_arr();
+	topkpath();
+
+	cout << arr[m - 1][n - 1].s[0];
+	for (int i = 1; i < arr[m - 1][n - 1].size; i++)
+		cout << " " << arr[m - 1][n - 1].s[i];
+	
+	int a = k - arr[m - 1][n - 1].size;
+	if (a > 0)
+		for (int i = 0; i < a; i++)
+			cout << " " << 0;
+	return 0;
+}
+
+
