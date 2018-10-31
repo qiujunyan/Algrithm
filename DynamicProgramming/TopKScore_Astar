@@ -1,0 +1,170 @@
+#include"stdafx.h"
+#include<iostream>
+#include<vector>
+
+#define SIZE 200
+#define C 20
+
+using namespace std;
+struct Score
+{
+	int f[C] = { 0 };//f = g + h
+	int h = 0;	//从当前点到终点最大得分
+	int g[C] = { 0 };	//从起点当前点实际得分
+	int size = 0;
+	int flag[C] = { 0 };
+};
+
+
+int m, n, k, indexi = 0, indexj = 0;
+int arr[SIZE][SIZE];
+Score score[SIZE][SIZE];
+int topkscore[SIZE] = { 0 };
+
+void H()
+{
+	int cnt = m + n;
+	while (cnt-- > 2)
+	{
+		int S = (cnt <= m + 1 ? 1 : cnt - m);
+		int T = (cnt <= n + 1 ? cnt - 1 : n);
+		for (int i = S; i <= T; i++)
+		{
+			if (score[cnt - i][i + 1].h > score[cnt - i + 1][i].h)//r>b
+				score[cnt - i][i].h = score[cnt - i][i].h + score[cnt - i][i + 1].h;
+			else
+				score[cnt - i][i].h = score[cnt - i][i].h + score[cnt - i + 1][i].h;
+		}
+	}
+	for (int i = 1; i <= m; i++)
+		for (int j = 1; j <= n; j++)
+			score[i][j].h -= arr[i][j];
+}
+
+int Encode(int x, int y)
+{
+	return n * (x - 1) + y;
+}
+int DecodeX(int c)
+{
+	if (c % n == 0)
+		return (c / n);
+	return int(c / n) + 1;
+}
+int DecodeY(int c)
+{
+	if (c % n == 0)
+		return n;
+	return c % n;
+}
+
+int Pop(vector<int> &queue, int size)
+{
+	int gscore = 0;
+	int coord = 0;
+	for (int i = size - 1; i >= 0; i--)
+	{
+		for (int j = 0; j <= score[DecodeX(queue[i])][DecodeY(queue[i])].size; j++)
+		{
+			if (!score[DecodeX(queue[i])][DecodeY(queue[i])].flag[j])
+				continue;
+			if (gscore < score[DecodeX(queue[i])][DecodeY(queue[i])].f[j])
+			{
+				gscore = score[DecodeX(queue[i])][DecodeY(queue[i])].f[j];
+				coord = queue[i];
+				indexi = i;
+				indexj = j;
+			}
+		}
+	}
+	score[DecodeX(queue[indexi])][DecodeY(queue[indexi])].flag[indexj] = 0;
+	return coord;
+}
+
+void Topkscore()
+{
+	vector<int> queue;
+	int t;
+	queue.push_back(Encode(1, 1));
+	score[1][1].f[0] = score[1][1].h + arr[1][1];
+	score[1][1].g[0] = arr[1][1];
+	score[1][1].flag[0] = 1;
+
+	int cnt = 0;
+	while (cnt < k)
+	{
+		if (queue.empty())
+			break;
+		t = Pop(queue, queue.size());
+		queue.erase(queue.begin()+indexi);
+
+		if (t == Encode(m, n))
+		{
+			topkscore[cnt] = score[m][n].f[indexj];
+			cnt++;
+			continue;
+		}
+		//score[DecodeX(t) + 1][DecodeY(t)].g[0] = score[DecodeX(t)][DecodeY(t)].g[indexj] + arr[DecodeX(t) + 1][DecodeY(t)].score;
+		//score[DecodeX(t) + 1][DecodeY(t)].f[0] = score[DecodeX(t) + 1][DecodeY(t)].g[0] + score[DecodeX(t) + 1][DecodeY(t)].h;	
+		//score[DecodeX(t)][DecodeY(t) + 1].g[1] = score[DecodeX(t)][DecodeY(t)].g[indexj] + arr[DecodeX(t)][DecodeY(t) + 1].score;
+		//score[DecodeX(t)][DecodeY(t) + 1].f[1] = score[DecodeX(t)][DecodeY(t) + 1].g[1] + score[DecodeX(t)][DecodeY(t) + 1].h;	//更新右边的值
+
+		//if (DecodeX(t) < m && !score[DecodeX(t) + 1][DecodeY(t)].flag[0])
+		//{
+		//	queue.push_back(Encode(DecodeX(t) + 1, DecodeY(t)));
+		//	score[DecodeX(t) + 1][DecodeY(t)].flag[0] = 1;
+		//}
+
+		//if (DecodeY(t) < n && !score[DecodeX(t)][DecodeY(t) + 1].flag[1])
+		//{
+		//	queue.push_back(Encode(DecodeX(t), DecodeY(t) + 1));
+		//	score[DecodeX(t)][DecodeY(t) + 1].flag[1] = 1;
+		//}
+
+		int size;
+		if (DecodeX(t) < m)
+		{		
+			size= score[DecodeX(t) + 1][DecodeY(t)].size;
+			score[DecodeX(t) + 1][DecodeY(t)].g[size] = score[DecodeX(t)][DecodeY(t)].g[indexj] + arr[DecodeX(t) + 1][DecodeY(t)];
+			score[DecodeX(t) + 1][DecodeY(t)].f[size] = score[DecodeX(t) + 1][DecodeY(t)].g[size] + score[DecodeX(t) + 1][DecodeY(t)].h;
+			queue.push_back(Encode(DecodeX(t) + 1, DecodeY(t)));
+			score[DecodeX(t) + 1][DecodeY(t)].flag[size] = 1;
+			score[DecodeX(t) + 1][DecodeY(t)].size++;
+		}
+
+		if (DecodeY(t) < n)
+		{		
+			size = score[DecodeX(t)][DecodeY(t) + 1].size;
+			score[DecodeX(t)][DecodeY(t) + 1].g[size] = score[DecodeX(t)][DecodeY(t)].g[indexj] + arr[DecodeX(t)][DecodeY(t) + 1];
+			score[DecodeX(t)][DecodeY(t) + 1].f[size] = score[DecodeX(t)][DecodeY(t) + 1].g[size] + score[DecodeX(t)][DecodeY(t) + 1].h;	//更新右边的值
+			queue.push_back(Encode(DecodeX(t), DecodeY(t) + 1));
+			score[DecodeX(t)][DecodeY(t) + 1].flag[size] = 1;
+			score[DecodeX(t)][DecodeY(t) + 1].size++;
+		}
+	}
+}
+
+void Initial()
+{
+	cin >> m >> n >> k;
+	for (int i = 1; i <= m; i++)
+		for (int j = 1; j <= n; j++)
+		{
+			cin >> arr[i][j];
+			score[i][j].h = arr[i][j];
+		}
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(0);
+	Initial();
+	H();
+	Topkscore();
+
+	for (int i = 0; i < k-1; i++)
+		cout << topkscore[i] <<" ";
+	cout << topkscore[k - 1];
+	return 0;
+}
