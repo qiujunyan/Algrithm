@@ -1,0 +1,223 @@
+#include "stdafx.h"
+#include <iostream>
+#include <vector>
+
+#define INFINITY 200000
+using namespace std;
+
+// 全局变量
+int m, n;
+struct volunteer
+{
+	int s;
+	int f;
+	int c;
+};
+vector<volunteer> v;
+vector<int> a;
+vector<vector<int> > delta;
+
+//	初始化模型参数
+void input_data()
+{
+	cin >> n >> m;
+
+	for (int i = 0; i < n; i++)
+	{
+		int temp_a;
+		cin >> temp_a;
+		a.push_back(temp_a);
+	}
+
+	for (int i = 0; i < m; i++)
+	{
+		volunteer temp_v;
+		cin >> temp_v.s >> temp_v.f >> temp_v.c;
+		v.push_back(temp_v);
+	}
+
+	delta.resize(n);
+	for (int i = 0; i < n; i++)
+	{
+		delta[i].resize(m);
+		for (int j = 0; j < m; j++)
+		{
+			if (v[j].s <= i + 1 && i + 1 <= v[j].f)
+				delta[i][j] = 1;
+			else
+				delta[i][j] = 0;
+		}
+	}
+}
+
+void row_operater(vector<int> &a, vector<int> &b)
+{
+	if (a.size() != b.size())
+	{
+		cout << "wrong input" << endl;
+		return;
+	}
+	for (int i = 0; i < a.size(); i++)
+		a[i] = a[i] - b[i];
+}
+
+void pivot(vector<vector<int> > &coef, vector<int> &B, vector<int> c, vector<int> &x, bool &flag)
+{
+	// 入基向量
+	int index1 = -1, temp_sigma = 0;
+	vector<int> sigma(m + n + 1, 0);	//	入基下标，检验数
+	for (int i = 0; i < m + n + 1; i++)
+	{
+		for (int j = 0; j < n; j++)
+			sigma[i] += c[B[j]] * coef[j][i];
+		sigma[i] = c[i] - sigma[i];
+		if (sigma[i] < temp_sigma)
+		{
+			temp_sigma = sigma[i];
+			index1 = i;
+		}
+	}
+	if (index1 < 0)
+	{
+		for (int i = 0; i < n; i++)
+			x[B[i]] = coef[i][m + n + 1];
+		flag = true;
+		return;
+	}
+
+	// 出基向量
+	int temp = INFINITY;
+	int index2 = -1;
+	for (int i = 0; i < n; i++)
+	{
+		if (coef[i][index1] > 0 && coef[i][m + n + 1] / coef[i][index1] < temp)
+		{
+			temp = coef[i][m + n + 1] / coef[i][index1];
+			index2 = i;
+		}
+	}
+	if (index2 < 0)
+	{
+		cout << "unbounded" << endl;	//无界
+		return;
+	}
+	B[index2] = index1;
+	for (int j = 0; j < m + n + 2; j++)
+		coef[index2][j] = coef[index2][j] / coef[index2][index1];
+	for (int i = 0; i < n; i++)
+	{
+		if (i == index2)
+			continue;
+		int temp = coef[i][index1] / coef[index2][index1];
+		for (int j = 0; j < m + n + 2; j++)
+		{
+			coef[i][j] = coef[i][j] - coef[index2][j] * temp;
+		}
+	}
+	for (int i = 0; i < n; i++)
+		x[B[i]] = coef[i][m + n + 1];
+}
+
+// 初始化系数矩阵
+void initial_coefficient(vector<vector<int> > &coef, vector<int> &C)
+{
+	// 初始化系数
+	for (int i = 0; i < n; i++)
+		for (int j = 0; j < m + n + 2; j++)
+		{
+			if (j < m)
+				coef[i][j] = -delta[i][j];
+			else if (j == m)
+				coef[i][j] = -1;
+			else if (j == m + i + 1)
+				coef[i][j] = 1;
+			else if (j == m + n + 1)
+				coef[i][j] = -a[i];
+		}
+	for (int i = 0; i < m; i++)
+		C[i] = v[i].c;
+	C[m] = INFINITY;
+}
+
+//	求解初始解
+void initial_simplex(vector<vector<int> >&coef, vector<int> &x, vector<int> &B)
+{
+
+	vector<int> c(m + n + 1, 0);
+	c[m] = 1;
+
+	// 单纯形法
+	/*选择初始基变量*/
+	int temp = 0;
+	int index = 0;
+	for (int i = 0; i < n; i++)
+	{
+		if (temp > coef[i][m + n + 1])
+		{
+			temp = coef[i][m + n + 1];
+			index = i;
+		}
+	}
+	for (int i = 0; i < n; i++)
+	{
+		if (coef[i][m + n + 1] < 0 && i != index)
+			row_operater(coef[i], coef[index]);
+	}
+	for (int i = 0; i < m + n + 2; i++)
+		coef[index][i] = -coef[index][i];
+
+	// vector<int> B; // 基向量系数
+	for (int i = m + 1; i < m + n + 1; i++)
+	{
+		if (i != index + m + 1)
+			B.push_back(i);
+		else
+			B.push_back(m);
+	}
+
+	while (true)
+	{
+		bool flag = false;
+		pivot(coef, B, c, x, flag);
+		if (flag)
+			break;
+		fill(x.begin(), x.end(), 0);
+	}
+}
+
+void simplex(int &cost)
+{
+	vector<int> x(m + n + 1, 0);
+	vector<vector<int> > coef(n, (vector<int>(m + n + 2, 0)));
+	vector<int> b(m, 0);
+	vector<int> B;
+	vector<int> C(m + n + 1, 0);
+	initial_coefficient(coef, C);
+	initial_simplex(coef, x, B);
+
+	// 将基向量对应的系数矩阵单位化
+
+	while (true)
+	{
+		bool flag = false;
+		pivot(coef, B, C, x, flag);
+		if (flag)
+			break;
+		fill(x.begin(), x.end(), 0);
+	}
+	for (int i = 0; i < m; i++)
+		cost += x[i] * C[i];
+}
+
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(0);
+	int cost = 0;
+	input_data();
+	simplex(cost);
+	cout << cost << endl;
+	return 0;
+}
+
