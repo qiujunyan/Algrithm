@@ -1,0 +1,168 @@
+#include "stdafx.h"
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#define N 5
+#define INFINITY 200000
+
+using namespace std;
+vector<float> s(N, 0);
+vector<float> t(N, 0);
+vector<float> c(4 * N, 0);
+vector<vector<float> > coef(3 * N - 1, vector <float>(4 * N + 1, 0));
+
+void input_data()
+{
+	float temp_s, temp_t;
+	for (int i = 0; i < N; i++)
+	{
+		cin >> temp_s >> temp_t;
+		s[i] = temp_s;
+		t[i] = temp_t;
+	}
+	for (int i = 0; i < N - 1; i++)
+	{
+		coef[i][i] = 1;
+		coef[i][i + 1] = -1;
+		coef[i][N] = 1;
+		coef[i][N + i + 1] = 1;
+	}
+	int cnt = 0;
+	for (int i = N - 1; i < 3 * N - 2; i += 2)
+	{
+		coef[i][(i - N + 1) / 2] = 1;
+		coef[i][N + i + 1] = -1;
+		coef[i][4 * N] = s[cnt];
+		coef[i + 1][(i - N + 1) / 2] = 1;
+		coef[i + 1][N + i + 2] = 1;
+		coef[i + 1][4 * N] = t[cnt];
+		cnt++;
+	}
+}
+
+void row_operation(vector<float> &a, vector<float> &b, int mul)
+{
+	int size = a.size();
+	for (int i = 0; i < size; i++)
+	{
+		a[i] = a[i] - b[i] * mul;
+	}
+}
+
+void initial_simplex(vector<vector<float> > &coef)
+{
+	const int ROW = 3 * N - 1;
+	for (int i = N-1; i < ROW; i += 2)
+	{
+		for (int j = 0; j < ROW; j++)
+		{
+			if (j == i)
+				continue;
+			int mul = coef[j][(i - 4) / 2] / coef[i][(i - 4) / 2];
+			row_operation(coef[j], coef[i], mul);
+		}
+	}
+}
+
+// 计算检验数
+float calculate_sigma(int k, int B[])
+{
+	float sigma = 0;
+	for (int i = 0; i < 3 * N - 1; i++)
+		sigma += c[B[i]] * coef[i][k];
+	sigma = c[k] - sigma;
+	return sigma;
+}
+
+void pivot(int index1, int index2)
+{
+	float temp_pivot = coef[index2][index1];
+	for (int i = 0; i < 4 * N + 1; i++)
+		coef[index2][i] /= temp_pivot;
+	for (int i = 0; i < 3 * N - 1; i++)
+	{
+		if (i == index2)
+			continue;
+		float temp = coef[i][index1] / coef[index2][index1];
+		for (int j = 0; j < 4 * N + 1; j++)
+		{
+			coef[i][j] = coef[i][j] - coef[index2][j] * temp;
+
+		}
+
+	}
+}
+
+void simplex(vector<float> &x)
+{
+	c[N] = -1;
+	//vector<int> B = { 6,7,8,9,0,11,1,13,2,15,3,17,4,19 };
+	int B[] = { 6,7,8,9,0,11,1,13,2,15,3,17,4,19 };
+	initial_simplex(coef);
+
+	while (true)
+	{
+		vector<float> sigma(4 * N, 0);
+		float temp1 = 0;
+		int index1 = -1; // 入基向量
+		for (int i = 0; i < 4 * N; i++)
+		{
+			sigma[i] = calculate_sigma(i, B);
+			if (temp1 > sigma[i])
+			{
+				temp1 = sigma[i];
+				index1 = i;
+			}
+		}
+		if (index1 < 0)
+			break;
+		
+		float temp2 = INFINITY;
+		int index2 = -1;	// 出基向量
+		for (int i = 0; i < 3 * N - 1; i++)
+		{
+			if (coef[i][index1] <= 0)
+				continue;
+			float t = coef[i][4 * N] / coef[i][index1];
+			if (temp2 > t)
+			{
+				temp2 = t;
+				index2 = i;
+			}
+		}
+		if (index2 < 0)
+		{
+			cout << "unbounded" << endl;
+			return;
+		}
+		vector<float> b(3 * N - 1, 0);
+		for (int i = 0; i < 3 * N - 1; i++)
+		{
+			b[i] = coef[i][4 * N];
+		}
+		pivot(index1, index2);
+		for (int i = 0; i < 3 * N - 1; i++)
+		{
+			b[i] = coef[i][4 * N];
+		}
+		B[index2] = index1;
+	}
+	for (int i = 0; i < 3 * N - 1; i++)
+	{
+		x[B[i]] = coef[i][4 * N];
+	}
+}
+
+int main()
+{
+	vector<float> x(4 * N, 0);
+	input_data();
+	simplex(x);
+	for (int i = 0; i < N; i++)
+	{
+		cout << fixed << setprecision(2) << x[i];
+		if (i < N - 1)
+			cout << " ";
+	}
+	return 0;
+}
