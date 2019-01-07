@@ -1,0 +1,141 @@
+#include"stdafx.h"
+#include<iostream>
+#include<queue>
+
+#define N 200
+#define M 10000000
+#define INFINITY 100000000
+
+using namespace std;
+
+struct edge
+{
+	int to;
+	int next;
+	int w;
+};
+int m, n, g_cnt = 0;
+bool barrier[N][N] = { false };
+edge graph[M];
+int head[M] = { 0 }; //边的起点节点
+int dis[M]; //节点离原点的距离
+int dx[8] = { -2,-2,-1,-1,1,1,2,2 };
+int dy[8] = { -1,1,-2,2,2,-2,1,-1 };
+queue<int> q;
+
+void input_data()
+{
+	cin >> n >> m;
+	int temp_x, temp_y;
+	for (int i = 0; i < m; i++)
+	{
+		cin >> temp_x >> temp_y;
+		barrier[temp_x][temp_y] = true;
+	}
+}
+
+int coord_trans(int x, int y)
+{
+	int coord = (x - 1)*n + y;
+	return coord;
+}
+
+void add_edge(int u, int v, int w = 1)
+{
+	graph[++g_cnt].to = v, graph[g_cnt].next = head[u], graph[g_cnt].w = w, head[u] = g_cnt;
+	graph[++g_cnt].to = u, graph[g_cnt].next = head[v], graph[g_cnt].w = 0, head[v] = g_cnt;
+}
+
+void build_graph()
+{
+	for (int i = 1; i <= n; i++)
+		for (int j = 1; j <= n; j++)
+		{
+			if (barrier[i][j])
+				continue;
+			if ((i + j) % 2)	//单数与源点连接
+				add_edge(0, coord_trans(i, j), 1);
+			else				//偶数与汇点连接
+				add_edge(coord_trans(i, j), coord_trans(n, n) + 1, 1);
+		}
+
+	for (int i = 1; i <= n; i++)
+		for (int j = 1; j <= n; j++)
+		{
+			if (barrier[i][j] || (i + j) % 2 == 0)
+				continue;
+			for (int k = 0; k < 8; k++)
+			{
+				int temp_x = i + dx[k];
+				int temp_y = j + dy[k];
+				if (temp_x >= 1 && temp_x <= n && temp_y >= 1 && temp_y <= n && !barrier[temp_x][temp_y])
+					add_edge(coord_trans(i, j), coord_trans(temp_x, temp_y));
+			}
+		}
+}
+
+bool bfs()
+{
+	memset(dis, -1, sizeof(dis));
+	int s = 0, t = n * n + 1;
+	while (!q.empty())
+		q.pop();
+	q.push(s);
+	dis[s] = 0;
+	while (!q.empty())
+	{
+		int u = q.front();
+		q.pop();
+		for (int i = head[u]; i; i = graph[i].next)
+		{
+			int v = graph[i].to;
+			int flow = graph[i].w;
+			if (flow > 0 && dis[v] == -1)
+			{
+				dis[v] = dis[u] + 1;
+				q.push(v);
+			}
+		}
+	}
+	if (dis[t] > 0)
+		return true;
+	else
+		return false;
+}
+
+int max_flow(int u, int flow)
+{
+	int	v, sum = 0, bottle_neck = 0, w = 0;
+	if (u == n * n + 1)
+		return flow;
+	for (int i = head[u]; i; i = graph[i].next)
+	{
+		v = graph[i].to;
+		w = graph[i].w;
+		if (w > 0 && dis[v] == dis[u] + 1 && (bottle_neck = max_flow(v, min(w, flow - sum))))
+		{
+			graph[i].w -= bottle_neck;
+			if (i & 1) 
+				graph[i + 1].w += bottle_neck;
+			else 
+				graph[i - 1].w += bottle_neck;
+			sum += bottle_neck;
+		}
+	}
+	if (!sum) dis[u] = -1;
+	return sum;
+}
+
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(0);
+	input_data();
+	build_graph();
+	int max_knight = n * n - m;
+	while (bfs())
+		max_knight -= max_flow(0, INFINITY);
+	cout << max_knight << endl;
+	return 0;
+}
