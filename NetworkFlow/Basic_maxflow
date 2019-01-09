@@ -1,0 +1,105 @@
+#include"stdafx.h"
+#include<iostream>
+#include<cstdio>
+#include<algorithm>
+#include<queue>
+using namespace std;
+const int MAXN = 10000 + 5;
+const int MAXM = 300000 + 5;
+const int INF = 1e9;
+
+int n, m;
+int s, t;//源点 汇点
+long long maxflow;
+
+struct Edge 
+{
+	int next;
+	int to;
+	long long flow;
+} l[MAXM << 1];
+
+int head[MAXN], cnt = 1;
+int deep[MAXN], cur[MAXN];//deep记录bfs分层图每个点到源点的距离
+queue <int> q;
+
+inline void add(int x, int y, long long z) {
+	cnt++;
+	l[cnt].next = head[x];
+	l[cnt].to = y;
+	l[cnt].flow = z;
+	head[x] = cnt;
+	return;
+}
+
+long long min(long long x, long long y) 
+{
+	return x < y ? x : y;
+}
+
+long long dfs(int now, int t, long long lim) //分别是当前点，汇点，当前边上最小的流量
+{
+	if (!lim || now == t) 
+		return lim;//终止条件
+	long long flow = 0;
+	long long f;
+	for (int i = cur[now]; i; i = l[i].next) 
+	{//当前弧优化
+		cur[now] = i;
+		if (deep[l[i].to] == deep[now] + 1 
+			&& (f = dfs(l[i].to, t, min(lim, l[i].flow))))
+		{
+			flow += f;
+			lim -= f;
+			l[i].flow -= f;
+			l[i ^ 1].flow += f;
+			if (!lim) break;//没有残量就意味着不存在增广路
+		}
+	}
+	return flow;
+}
+
+bool bfs(int s, int t) {
+	for (int i = 1; i <= n; i++) {
+		cur[i] = head[i];
+		deep[i] = 0x7f7f7f7f;
+	}
+	while (!q.empty()) q.pop();
+	deep[s] = 0;
+	q.push(s);
+	while (!q.empty()) {
+		int tmp = q.front();
+		q.pop();
+		for (int i = head[tmp]; i; i = l[i].next) 
+		{
+			if (deep[l[i].to] > INF && l[i].flow) //有流量就增广
+			{
+				deep[l[i].to] = deep[tmp] + 1;
+				q.push(l[i].to);
+			}
+		}
+	}
+	if (deep[t] < INF) return true;
+	else return false;
+}
+
+void dinic(int s, int t) 
+{
+	while (bfs(s, t))
+		maxflow += dfs(s, t, INF);
+}
+
+int main() 
+{
+	scanf("%d%d%d%d", &n, &m, &s, &t);
+	int x, y;
+	long long z;
+	for (int i = 1; i <= m; i++) {
+		scanf("%d%d%lld", &x, &y, &z);
+		add(x, y, z);
+		add(y, x, 0);
+	}
+	dinic(s, t);
+	printf("%lld\n", maxflow);
+	return 0;
+}
